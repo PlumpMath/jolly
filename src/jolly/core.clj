@@ -5,6 +5,7 @@
      [aspects :as a]
      [bars :as b]
      [things :as t]
+     [transformers :as gr-trans]
      [utils :as g-utils]]
     [grenada.things.utils :as t-utils]
     jolly.bars
@@ -135,6 +136,7 @@
            (grim-thing->gren-thing grim-meta)
            (?>> (seq grim-meta)
                 (t/attach-bar b/def-for-bar-type ::b/any grim-meta))
+           gr-trans/specify-cmeta-any
            (maybe-attach :jolly.bars/examples
                          (read-examples lib-grim-config grim-t))
            (maybe-attach :jolly.bars/notes
