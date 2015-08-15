@@ -1,6 +1,8 @@
 (ns jolly.core
   (:require
+    [grey.core :as grey]
     [plumbing.core :refer [fnk safe-get safe-get-in ?> ?>>] :as plumbing]
+    poomoo.bars
     [grenada
      [aspects :as a]
      [bars :as b]
@@ -129,14 +131,22 @@
                   gren-thing)
     gren-thing))
 
-(defn grim-t->gren-t-with-bars [lib-grim-config grim-t]
+(grey/with-handler! #'gr-trans/specify-cmeta-any
+  gr-trans/missing-bar-type-defs? :attach-anyway)
+
+(defn grim-t->gren-t-with-bars
+  "
+
+  poomoo.bars Bars are available automatically. Bars of unknown type are
+  attached, but not checked. This will be improved in a visible future."
+  [lib-grim-config grim-t]
   (let [grim-meta (either/result (grim/read-meta lib-grim-config grim-t))]
     (if-not (and (grim-t/def? grim-t) (= :sentinel (safe-get grim-meta :type)))
       (->> grim-t
            (grim-thing->gren-thing grim-meta)
            (?>> (seq grim-meta)
                 (t/attach-bar b/def-for-bar-type ::b/any grim-meta))
-           gr-trans/specify-cmeta-any
+           (gr-trans/specify-cmeta-any poomoo.bars/def-for-bar-type)
            (maybe-attach :jolly.bars/examples
                          (read-examples lib-grim-config grim-t))
            (maybe-attach :jolly.bars/notes
