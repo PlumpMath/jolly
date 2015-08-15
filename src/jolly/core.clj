@@ -77,8 +77,7 @@
              (grim/search lib-grim-config
                           (into [k] (repeat (inc i) :any))))
            (map either/result)
-           plumbing/aconcat
-           (remove #(= ".git" (safe-get % :name)))))))
+           plumbing/aconcat))))
 
 ;; REVIEW: New versions of lib-grimoire might allow examples on non-def Things.
 ;;         (RM 2015-07-25)
