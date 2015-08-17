@@ -10,6 +10,8 @@ Belongs to the [Grenada project](https://github.com/clj-grenada/grenada-spec).
 
 Leiningen dependency: `[org.clj-grenada/jolly "1.0.0-rc.1"]`
 
+[API docs](https://clj-grenada.github.io/jolly/api-docs/) (with backlink!)
+
 ## License
 
 See [`LICENSE.txt`](LICENSE.txt).

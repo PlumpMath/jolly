@@ -10,4 +10,10 @@
                  [org.clj-grenada/poomoo "1.0.0-rc.1"]
                  [org.clojars.rmoehn/lib-grimoire "0.10.3"]
                  [prismatic/plumbing "0.4.0"]
-                 [prismatic/schema "0.4.3"]])
+                 [prismatic/schema "0.4.3"]]
+
+  :codox {:sources ["src"]
+          :output-dir "api-docs"
+          :src-dir-uri "https://github.com/clj-grenada/jolly/blob/master/"
+          :homepage-uri "https://github.com/clj-grenada/jolly/tree/master/"
+          :src-linenum-anchor-prefix "L"})
