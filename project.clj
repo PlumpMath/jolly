@@ -1,4 +1,4 @@
-(defproject org.clj-grenada/jolly "1.0.0-rc.2"
+(defproject org.clj-grenada/jolly "1.0.0-rc.3-SNAPSHOT"
   :description "Small Clojure library for interop between Grenada and Grimoire"
   :url "https://github.com/clj-grenada/jolly"
   :license {:name "MIT license"
