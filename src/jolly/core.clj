@@ -1,4 +1,5 @@
 (ns jolly.core
+  "Fns for converting Grimoire data stores to Grenada Things."
   (:require
     [grey.core :as grey]
     [plumbing.core :refer [fnk safe-get safe-get-in ?> ?>>] :as plumbing]
@@ -21,14 +22,21 @@
 ;; A bit repetitive, but at least it allows me to easily check whether an
 ;; I've covered all the cases and whether there is anything foul in the state of
 ;; the input data.
-(def grim-tag->gren-tag {::grim-t/group     ::t/group
-                         ::grim-t/artifact  ::t/artifact
-                         ::grim-t/version   ::t/version
-                         ::grim-t/platform  ::t/platform
-                         ::grim-t/namespace ::t/namespace
-                         ::grim-t/def       ::t/find})
+(def grim-tag->gren-tag
+  "Maps Grimoire Thing tags to Grenada Main Aspect names."
+  {::grim-t/group     ::t/group
+   ::grim-t/artifact  ::t/artifact
+   ::grim-t/version   ::t/version
+   ::grim-t/platform  ::t/platform
+   ::grim-t/namespace ::t/namespace
+   ::grim-t/def       ::t/find})
 
-(defn get-all-coords [grim-thing]
+(defn get-all-coords
+  "Given a Grimoire Thing, returns its coordinates.
+
+  This isn't as easy as in Grenada, because we have to traverse the Grimoire
+  Thing graph."
+  [grim-thing]
   (let [gren-tag (safe-get grim-tag->gren-tag (gt/tag grim-thing))
         ncoords (safe-get-in t/def-for-aspect [gren-tag :ncoords])]
     (-> (for [depth (reverse (range ncoords))
@@ -38,7 +46,10 @@
           (safe-get-in grim-thing ks))
         vec)))
 
-(defn determine-aspects [grim-meta]
+(defn determine-aspects
+  "Given a map of metadata as read from a Grimoire data store, returns the
+  appropriate Grenada Aspects for them."
+  [grim-meta]
   (let [t (safe-get grim-meta :type)]
    (case t
     :fn      [::a/var-backed ::a/fn]
@@ -51,7 +62,9 @@
     (throw (IllegalArgumentException.
              (str "Unknown type of def: " t))))))
 
-(defmulti grim-thing->gren-thing (fn [_ tval] (gt/tag tval)))
+(defmulti grim-thing->gren-thing
+  "Converts Grimoire metadata and Thing to a Grenada Thing."
+  (fn [_ tval] (gt/tag tval)))
 
 (defmethod grim-thing->gren-thing ::grim-t/def [grim-meta d]
   (->> (t/map->thing {:coords (get-all-coords d)})
@@ -66,6 +79,8 @@
              (str "Unknown Grimoire type of Grimoire thing: " (pr-str t))))))
 
 (def read-all-things
+  "Reads all Things it can find in the Grimoire data store denoted by
+  LIB-GRIM-CONFIG."
   (memoize
     (fn read-all-things-fn [lib-grim-config]
       (->> (for [[i k] (plumbing/indexed [:group
@@ -92,7 +107,14 @@
 ;;
 ;;  - Don't be fooled by the doc string of grimoire.api/list-examples.
 ;;
-(defn read-examples [config thing]
+(defn read-examples
+  "Reads and returns the examples for Grimoire THING from the datastore denoted
+  by CONFIG.
+
+  Returns an empty collection if no examples are found.
+
+  CONFIG is a :grimoire.api.fs/Config Tmap."
+  [config thing]
   (if (grim-t/def? thing)
     (map #(assoc % :contents (either/result (grim/read-example config %)))
          (either/result (grim/list-examples config thing)))
@@ -103,11 +125,16 @@
 ;;  - This looks kind of similar to read-examples, but it doesn't have the
 ;;    grim-t/def? clause, because all Things support notes.
 ;;
-;;  - Unfortunately it also doesn't do the thing that's more sensible than the
-;;    doc string as list-examples does. (See note above.) It Fails if there are
-;;    no notes on a group. So we need a different clause.
+;;  - Unfortunately list-notes doesn't do the thing that's more sensible than
+;;    the doc string as list-examples does. (See note above.) It Fails if there
+;;    are no notes on a group. So we need a different clause.
 ;;
-(defn read-notes [config thing]
+(defn read-notes
+  "Reads and returns the notes for Grimoire THING from the datastore denoted by
+  CONFIG.
+
+  CONFIG is a :grimoire.api.fs/Config Tmap."
+  [config thing]
   (let [notes (grim/list-notes config thing)]
     (if (or (grim-t/versioned? thing) (either/succeed? notes))
       (map #(assoc % :contents (either/result (grim/read-note config %)))
@@ -115,9 +142,10 @@
       [])))
 
 (defn maybe-attach
-  "
+  "Attaches Grimoire examples or notes (GRIM-STHS) to GREN-THING as a Bar of the
+  type with name BAR-TYPE-TAG.
 
-  Works for examples and notes, since they have the same shape.
+  If GRIM-STHS is empty, attaches nothing.
 
   sths … somethings"
   [bar-type-tag grim-sths gren-thing]
@@ -134,10 +162,18 @@
   gr-trans/missing-bar-type-defs? :attach-anyway)
 
 (defn grim-t->gren-t-with-bars
-  "
+  "Returns the corresponding Grenada thing for the Grimoire Thing GRIM-T,
+  reading data from the data store configured in LIB-GRIM-CONFIG.
 
-  poomoo.bars Bars are available automatically. Bars of unknown type are
-  attached, but not checked. This will be improved in a visible future."
+  Cmetadata Bars from the Cmetadata of the Grimoire Thing are attached as
+  Grenada Bars. Their validity is checked if the definitions of their types are
+  contained in grenada.bars or poomoo.bars. Bars of unknown type are
+  attached, but not checked. This will be improved in a visible future.
+
+  If the metadata for GRIM-T tell that it is a sentinel, return nil. Sentinels
+  are Grimoire Things that refer to other Things, because they're not really
+  Things, but syntax, like the 'catch' in a (try …) form. I don't want these to
+  be Grenada Things."
   [lib-grim-config grim-t]
   (let [grim-meta (either/result (grim/read-meta lib-grim-config grim-t))]
     (if-not (and (grim-t/def? grim-t) (= :sentinel (safe-get grim-meta :type)))
@@ -151,7 +187,10 @@
            (maybe-attach :jolly.bars/notes
                          (read-notes lib-grim-config grim-t))))))
 
-(defn grim-ts->gren-ts-with-bars [lib-grim-config grim-ts]
+(defn grim-ts->gren-ts-with-bars
+  "Converts all Grimoire Things in GRIM-TS into Grenada Things, skipping the
+  ones for which grim-t->gren-ts-with-bars returns nil."
+  [lib-grim-config grim-ts]
   (->> grim-ts
        (map #(grim-t->gren-t-with-bars lib-grim-config %))
        (remove nil?)))

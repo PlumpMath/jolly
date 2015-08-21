@@ -8,7 +8,7 @@ Grenada files.
 
 Belongs to the [Grenada project](https://github.com/clj-grenada/grenada-spec).
 
-Leiningen dependency: `[org.clj-grenada/jolly "1.0.0-rc.2"]`
+Leiningen dependency: `[org.clj-grenada/jolly "1.0.0-rc.3"]`
 
 [API docs](https://clj-grenada.github.io/jolly/api-docs/) (with backlink!)
 
